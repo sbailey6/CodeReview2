@@ -56,7 +56,7 @@ import java.lang.Runnable;
 import java.lang.InterruptedException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-//***********************************************ALLOCATION FIRST (74 lines)***********************************************************
+//*************************************BLOCK-1 BEGINS	Author: Rashika Gupta***********************************************************
 // The following class is Android Emulator specific. It is used to read and
 // write contents of the host system's clipboard.
 class HostClipboardMonitor implements Runnable {
@@ -134,8 +134,7 @@ class HostClipboardMonitor implements Runnable {
         }
     }
 }
-
-//***********************************************ALLOCATION SECOND (87 lines)***********************************************************
+//*********************************************** BLOCK-2 BEGINS: ALLOCATION SECOND (87 lines)***********************************************************
 /**
  * Implementation of the clipboard for copy and paste.
  */
@@ -227,7 +226,7 @@ public class ClipboardService extends SystemService {
             this.userId = userId;
         }
     }
-//***********************************************ALLOCATION THIRD (71 lines)***********************************************************
+//***********************************************BLOCK-3: ALLOCATION THIRD (71 lines)***********************************************************
     private class ClipboardImpl extends IClipboard.Stub {
         @Override
         public boolean onTransact(int code, Parcel data, Parcel reply, int flags)
@@ -300,7 +299,7 @@ public class ClipboardService extends SystemService {
                 }
             }
         }
-//***********************************************ALLOCATION FOURTH (66 lines)***********************************************************
+//***********************************************BLOCK-4: ALLOCATION FOURTH (66 lines)***********************************************************
         @Override
         public ClipData getPrimaryClip(String pkg) {
             synchronized (this) {
@@ -368,7 +367,7 @@ public class ClipboardService extends SystemService {
             }
         }
     };
-//***********************************************ALLOCATION FIRST (13 lines)***********************************************************
+//*************************************BLOCK-5 BEGINS	Author: Rashika Gupta***********************************************************
     private PerUserClipboard getClipboard() {
         return getClipboard(UserHandle.getCallingUserId());
     }
@@ -383,7 +382,7 @@ public class ClipboardService extends SystemService {
             return puc;
         }
     }
-//***********************************************ALLOCATION SECOND (12 lines)***********************************************************
+//*********************************************** BLOCK-6: ALLOCATION SECOND (12 lines)***********************************************************
     List<UserInfo> getRelatedProfiles(int userId) {
         final List<UserInfo> related;
         final long origId = Binder.clearCallingIdentity();
@@ -397,7 +396,7 @@ public class ClipboardService extends SystemService {
         }
         return related;
     }
-//***********************************************ALLOCATION FIRST (34 lines)***********************************************************
+//*************************************BLOCK-7 BEGINS	Author: Rashika Gupta***********************************************************
     void setPrimaryClipInternal(PerUserClipboard clipboard, ClipData clip) {
         clipboard.activePermissionOwners.clear();
         if (clip == null && clipboard.primaryClip == null) {
@@ -433,7 +432,7 @@ public class ClipboardService extends SystemService {
             Binder.restoreCallingIdentity(ident);
         }
     }
-//***********************************************ALLOCATION SECOND (31 lines)***********************************************************
+//*********************************************** BLOCK-8: ALLOCATION SECOND (31 lines)***********************************************************
     private final void checkUriOwnerLocked(Uri uri, int uid) {
         if (!"content".equals(uri.getScheme())) {
             return;
@@ -466,7 +465,7 @@ public class ClipboardService extends SystemService {
             checkItemOwnerLocked(data.getItemAt(i), uid);
         }
     }
-//***********************************************ALLOCATION THIRD (49 lines)***********************************************************
+//*********************************************** BLOCK-9: ALLOCATION THIRD (49 lines)***********************************************************
     private final void grantUriLocked(Uri uri, String pkg, int userId) {
         long ident = Binder.clearCallingIdentity();
         try {
@@ -517,7 +516,7 @@ public class ClipboardService extends SystemService {
             clipboard.activePermissionOwners.add(pkg);
         }
     }
-//***********************************************ALLOCATION FOURTH (54 lines)***********************************************************
+//*********************************************** BLOCK-10: ALLOCATION FOURTH (54 lines)***********************************************************
     private final void revokeUriLocked(Uri uri) {
         int userId = ContentProvider.getUserIdFromUri(uri,
                 UserHandle.getUserId(Binder.getCallingUid()));
