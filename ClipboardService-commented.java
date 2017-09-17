@@ -134,7 +134,7 @@ class HostClipboardMonitor implements Runnable {
         }
     }
 }
-//*********************************************** BLOCK-2 BEGINS: ALLOCATION SECOND (87 lines)***********************************************************
+//*********************************************** BLOCK-2 BEGINS    Author: Drishti Arora***********************************************************
 /**
  * Implementation of the clipboard for copy and paste.
  */
@@ -226,7 +226,7 @@ public class ClipboardService extends SystemService {
             this.userId = userId;
         }
     }
-//***********************************************BLOCK-3: ALLOCATION THIRD (71 lines)***********************************************************
+//***********************************************BLOCK-3: BEGINS    Author: Shawn Bailey***********************************************************
     private class ClipboardImpl extends IClipboard.Stub {
         @Override
         public boolean onTransact(int code, Parcel data, Parcel reply, int flags)
@@ -299,7 +299,7 @@ public class ClipboardService extends SystemService {
                 }
             }
         }
-//***********************************************BLOCK-4: ALLOCATION FOURTH (66 lines)***********************************************************
+//***********************************************BLOCK-4: BEGINS      Author: Shawn Bailey***********************************************************
         @Override
         public ClipData getPrimaryClip(String pkg) {
             synchronized (this) {
@@ -382,7 +382,7 @@ public class ClipboardService extends SystemService {
             return puc;
         }
     }
-//*********************************************** BLOCK-6: ALLOCATION SECOND (12 lines)***********************************************************
+//*********************************************** BLOCK-6: BEGINS     Author: Drishti Arora***********************************************************
     List<UserInfo> getRelatedProfiles(int userId) {
         final List<UserInfo> related;
         final long origId = Binder.clearCallingIdentity();
@@ -432,7 +432,7 @@ public class ClipboardService extends SystemService {
             Binder.restoreCallingIdentity(ident);
         }
     }
-//*********************************************** BLOCK-8: ALLOCATION SECOND (31 lines)***********************************************************
+//*********************************************** BLOCK-8: BEGINS     Author: Drishti Arora***********************************************************
     private final void checkUriOwnerLocked(Uri uri, int uid) {
         if (!"content".equals(uri.getScheme())) {
             return;
@@ -465,7 +465,7 @@ public class ClipboardService extends SystemService {
             checkItemOwnerLocked(data.getItemAt(i), uid);
         }
     }
-//*********************************************** BLOCK-9: ALLOCATION THIRD (49 lines)***********************************************************
+//*********************************************** BLOCK-9: BEGINS      Author: Shawn Bailey***********************************************************
     private final void grantUriLocked(Uri uri, String pkg, int userId) {
         long ident = Binder.clearCallingIdentity();
         try {
@@ -516,7 +516,7 @@ public class ClipboardService extends SystemService {
             clipboard.activePermissionOwners.add(pkg);
         }
     }
-//*********************************************** BLOCK-10: ALLOCATION FOURTH (54 lines)***********************************************************
+//*********************************************** BLOCK-10: BEGINS      Author: Shawn Bailey***********************************************************
     private final void revokeUriLocked(Uri uri) {
         int userId = ContentProvider.getUserIdFromUri(uri,
                 UserHandle.getUserId(Binder.getCallingUid()));
