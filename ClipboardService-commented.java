@@ -299,7 +299,7 @@ public class ClipboardService extends SystemService {
                 }
             }
         }
-//***********************************************BLOCK-4: BEGINS      Author: Shawn Bailey***********************************************************
+//***********************************************BLOCK-4: BEGINS      Author: Sujit Kumar***********************************************************
         @Override
         public ClipData getPrimaryClip(String pkg) {
             synchronized (this) {
@@ -516,7 +516,7 @@ public class ClipboardService extends SystemService {
             clipboard.activePermissionOwners.add(pkg);
         }
     }
-//*********************************************** BLOCK-10: BEGINS      Author: Shawn Bailey***********************************************************
+//*********************************************** BLOCK-10: BEGINS      Author: Sujit Kumar***********************************************************
     private final void revokeUriLocked(Uri uri) {
         int userId = ContentProvider.getUserIdFromUri(uri,
                 UserHandle.getUserId(Binder.getCallingUid()));
