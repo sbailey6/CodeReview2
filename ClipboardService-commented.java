@@ -462,69 +462,234 @@ public class ClipboardService extends SystemService {
             }
         }
 //***********************************************BLOCK-4: BEGINS      Author: Shawn Bailey***********************************************************
+         /*         
+		 Getter method which returns the primaryClip found inside the private inner PerUserClipboard,
+		 which is defined at the end of BLOCK-2 in this file.
+
+		 The parameter, String pkg, corresponds to the package who is trying to access and read the primaryClip.
+         It is used to check for permissions. Returns null if the pkg does not have permission to read the clip,
+         otherwise returns the primaryClip.
+         */
+
+        /* Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
+		 that class's method. */
         @Override
+        /*ClipData is imported from android.content.ClipData. 
+         ClipData contains meta-data about data that has been copied by the user.
+         This could be plain text, an image, a URL, etc. 
+         The ClipData is meant to allow pasting or dropping the data into an application,
+         such that the application can correctly interpret and represent that data.
+        */
         public ClipData getPrimaryClip(String pkg) {
+        	/*synchronized is a keyword meant to enforce concurrency without race conditions and deadlocks. 
+        	It is built around an intrinsic lock. Here, this statement measn that this class will provide the intrinsic
+        	lock used to enforce concurrent behavior in a safe manner. 
+
+        	 This ensures only one thread can be executing this code at a time, and all other 
+        	 calling threads will be forced to block and wait for their exclusive turn to use this operation*/
             synchronized (this) {
+            /*Before the primary Clip is returned, the method first checks if the user trying to access it 
+         	has a user id which has access to read the clip. If it does not, the method returns null instead as a safeguard,
+         	indicating the user does not have the rights to access the primaryClip for reading purposes.
+        	In order to understand this check, first we need to understand some classes. 
+
+         	The Binder class is imported from android.os.Binder, and is a inter-process-communication primitive. 
+        	It helps delegate communication among multiple processes. The method getCallingUid() returns the linux 
+         	user id of the process which sent the current work to be done, in other words, the uid of the caller.
+	
+         	The AppOpsManager class is imported from android.app.AppOsManager. This class provides an API for
+        	keeping track of application operations. AppOpsManager.OP_READ_CLIPBOARD is just a constant int equal to
+         	29, which corresponds to the reading operation for a clipboard. 
+	
+        	The Binder's uid and the read operation and the calling package are all used as parameters to the method
+        	cliboardAccessAllowed(), which returns true or false, depending on if the calling package can
+        	access the clip for reading at the moment getPrimaryClip is called. (The details of clipboardAccessAllowed
+        	can be found in BLOCK-10 of this file.)
+        	*/
                 if (!clipboardAccessAllowed(AppOpsManager.OP_READ_CLIPBOARD, pkg,
                             Binder.getCallingUid())) {
                     return null;
                 }
+            /* If the calling package does have permission to read the primaryClip, we add that calling package
+            to the active owners that have a lock. The details of this method call can be found in 
+            BLOCK-9 of this file.
+            */
                 addActiveOwnerLocked(Binder.getCallingUid(), pkg);
+	        /*This method calls the getter method getClipboard() which returns a PerUserClipboard object.
+	 		The getClipboard() method is defined in BLOCK-5 of this file.
+	 		The PerUserClipboard class is a private inner class defined in this file, at the end of BLOCK-2. 
+	 		The PerUserClipboard class has the primaryClip, a RemoteCallbackList of those that listen to the clip, and a hash set of active owners and their permissions
+	 		associated with the primaryClip. The primaryClip also has a userId associated with it, which is
+			initialized by the PerUserClipboard constructor.  
+	 		From that PerUserClipboard object, we extract it's ClipData primaryClip and return that object reference.*/
                 return getClipboard().primaryClip;
             }
         }
 
+        /*Getter method which returns a ClipDescription which describes what type of 
+        data is contained inside the ClipData primaryClip of the private inner class PerUserClipboard, found in 
+        BLOCK-2 of this file. 
+
+        The parameter, String callingPackage, corresponds to the package who is trying to access and read the primaryClip.
+        It is used to check for permissions.
+
+        Returns null if the calling package does not have access to read the clip or the clip is itself null,
+        otherwise returns the ClipDescription associated with primaryClip.*/
+
+        /* Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
+		 that class's method. */
         @Override
         public ClipDescription getPrimaryClipDescription(String callingPackage) {
+        	/*synchronized is a keyword meant to enforce concurrency without race conditions and deadlocks. 
+        	It is built around an intrinsic lock. Here, this statement measn that this class will provide the intrinsic
+        	lock used to enforce concurrent behavior in a safe manner. 
+
+        	 This ensures only one thread can be executing this code at a time, and all other 
+        	 calling threads will be forced to block and wait for their exclusive turn to use this operation*/
             synchronized (this) {
+            /*checks if the user has a user id which has access to read the clip. If it does not, the method 
+            returns null instead as a safeguard, indicating the user does not have the rights to access the 
+            primaryClip for reading purposes. 
+        	*/
                 if (!clipboardAccessAllowed(AppOpsManager.OP_READ_CLIPBOARD, callingPackage,
                             Binder.getCallingUid())) {
                     return null;
                 }
+            /*This method calls the getter method getClipboard() which returns a PerUserClipboard object.
+	 		The getClipboard() method is defined in BLOCK-5 of this file.
+	 		The PerUserClipboard class is a private inner class defined in this file, at the end of BLOCK-2.
+	 		The returned object reference is saved in clipboard*/
                 PerUserClipboard clipboard = getClipboard();
+            /*If the primaryClip is null, return null for the description.
+            Otherwise, we return the description of the primaryClip stored inside PerUserClipboard clipboard
+            by using the getter method getDescription(), defined in ClipData.java.
+            */
                 return clipboard.primaryClip != null ? clipboard.primaryClip.getDescription() : null;
             }
         }
 
+        /*The parameter, String callingPackage, corresponds to the package who is trying to access and read the primaryClip.
+        It is used to check for permissions.
+
+        Returns whether the callingPackage has permission to read ClipData primaryClip stored inside
+        the private inner class PerUserClipboard, found in BLOCK-2. 
+        Returns false if callPackage doesn't have access or primaryClip is null, 
+        otherwise returns true. */
+
+        /* Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
+		 that class's method. */
         @Override
         public boolean hasPrimaryClip(String callingPackage) {
+        	/*synchronized is a keyword meant to enforce concurrency without race conditions and deadlocks. 
+        	It is built around an intrinsic lock. Here, this statement measn that this class will provide the intrinsic
+        	lock used to enforce concurrent behavior in a safe manner. 
+
+        	 This ensures only one thread can be executing this code at a time, and all other 
+        	 calling threads will be forced to block and wait for their exclusive turn to use this operation*/
             synchronized (this) {
+            /*checks if the user has a user id which has access to read the clip. If it does not, the method 
+            returns false, indicating the user does not have the rights to access the 
+            primaryClip for reading purposes. 
+        	*/
                 if (!clipboardAccessAllowed(AppOpsManager.OP_READ_CLIPBOARD, callingPackage,
                             Binder.getCallingUid())) {
                     return false;
                 }
+            /*if callingPackage does have access to the primaryClip, then as long as the clip is not null, 
+            we return true. if the primaryClip is null, the method returns false. */
                 return getClipboard().primaryClip != null;
             }
         }
 
+
+        //TODO: Finish commenting theses two methods in more detail
+        /* Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
+		 that class's method. */
         @Override
         public void addPrimaryClipChangedListener(IOnPrimaryClipChangedListener listener,
                 String callingPackage) {
+        	/*synchronized is a keyword meant to enforce concurrency without race conditions and deadlocks. 
+        	It is built around an intrinsic lock. Here, this statement measn that this class will provide the intrinsic
+        	lock used to enforce concurrent behavior in a safe manner. 
+
+        	 This ensures only one thread can be executing this code at a time, and all other 
+        	 calling threads will be forced to block and wait for their exclusive turn to use this operation*/
             synchronized (this) {
+            	/*register callingPackage as a listener for the ClipData primaryClip stored inside the
+            	private inner class PerUserClipboard, found in BLOCK-2*/
                 getClipboard().primaryClipListeners.register(listener,
                         new ListenerInfo(Binder.getCallingUid(), callingPackage));
             }
         }
 
+         /* Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
+		 that class's method. */
         @Override
         public void removePrimaryClipChangedListener(IOnPrimaryClipChangedListener listener) {
+        	/*synchronized is a keyword meant to enforce concurrency without race conditions and deadlocks. 
+        	It is built around an intrinsic lock. Here, this statement measn that this class will provide the intrinsic
+        	lock used to enforce concurrent behavior in a safe manner. 
+
+        	 This ensures only one thread can be executing this code at a time, and all other 
+        	 calling threads will be forced to block and wait for their exclusive turn to use this operation*/
             synchronized (this) {
+            	/*unregister listener from the ClipData primaryClip stored inside the
+            	private inner class PerUserClipboard, found in BLOCK-2*/
                 getClipboard().primaryClipListeners.unregister(listener);
             }
         }
 
+        /*The parameter, String callingPackage, corresponds to the package which is being checked for
+        ClipBoard Text
+
+        Returns false if callingPackage doesn't have permision to access the clip, or there is something
+        wrong with extracting meaningful text. Otherwise, returns true.*/
+
+         /* Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
+		 that class's method. */
         @Override
         public boolean hasClipboardText(String callingPackage) {
+        	/*synchronized is a keyword meant to enforce concurrency without race conditions and deadlocks. 
+        	It is built around an intrinsic lock. Here, this statement measn that this class will provide the intrinsic
+        	lock used to enforce concurrent behavior in a safe manner. 
+
+        	 This ensures only one thread can be executing this code at a time, and all other 
+        	 calling threads will be forced to block and wait for their exclusive turn to use this operation*/
             synchronized (this) {
+            /*checks if the user has a user id which has access to read the clip. If it does not, the method 
+            returns false, indicating the user does not have the rights to access the 
+            primaryClip for reading purposes, and thus doesn't have any Clipboard Text available. 
+            In order to understand this check, first we need to understand some classes. 
+
+         	The Binder class is imported from android.os.Binder, and is a inter-process-communication primitive. 
+        	It helps delegate communication among multiple processes. The method getCallingUid() returns the linux 
+         	user id of the process which sent the current work to be done, in other words, the uid of the caller.
+	
+         	The AppOpsManager class is imported from android.app.AppOsManager. This class provides an API for
+        	keeping track of application operations. AppOpsManager.OP_READ_CLIPBOARD is just a constant int equal to
+         	29, which corresponds to the reading operation for a clipboard. 
+	
+        	The Binder's uid and the read operation and the calling package are all used as parameters to the method
+        	cliboardAccessAllowed(), which returns true or false, depending on if the calling package can
+        	access the clip for reading at the moment getPrimaryClip is called. (The details of clipboardAccessAllowed
+        	can be found in BLOCK-10 of this file.)
+        	*/
                 if (!clipboardAccessAllowed(AppOpsManager.OP_READ_CLIPBOARD, callingPackage,
                             Binder.getCallingUid())) {
                     return false;
                 }
+            /*This method calls the getter method getClipboard() which returns a PerUserClipboard object.
+	 		The getClipboard() method is defined in BLOCK-5 of this file.
+	 		The PerUserClipboard class is a private inner class defined in this file, at the end of BLOCK-2.
+	 		The returned object reference is saved in clipboard*/
                 PerUserClipboard clipboard = getClipboard();
+            /*If clipboard is not null and ClipData primaryClip's text inside clipboard is not null
+            nor an empty CharSequence,  return true */
                 if (clipboard.primaryClip != null) {
                     CharSequence text = clipboard.primaryClip.getItemAt(0).getText();
                     return text != null && text.length() > 0;
                 }
+            /*otherwise return false*/
                 return false;
             }
         }
