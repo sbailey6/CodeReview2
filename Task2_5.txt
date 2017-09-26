@@ -6,4 +6,4 @@ Task 3: UML class diagram describing superclasses and interfaces is provided in 
 Task 4: UML class diagram describing non-inheritance associations involving other classes is provided in a separate file.
 
 Task 5: What we have leared from this Code Review
-<FILL IN HERE 50+ words>
+While revieweing the clipboard service source code in the Android framework codebase, we have learnt how data is copied to the clipboard and placed in a new target location. This involves user profile management, synchronous thread execution, user permission management, and text handling for clipboard service. This has also helped us understand the Java programming principles of implementation of interface, nested classes, and function overriding.
