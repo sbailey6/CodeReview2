@@ -3,7 +3,7 @@ Task 2: Summary of Our File's Role in Android
 
 Task 3: UML class diagram describing superclasses and interfaces is provided in a separate file.
 
-Task 4: UML class diagram describing non-inheritance associations involving other classes is provided in a separate file.
+Task 4: UML class diagram describing non-inheritance associations involving other classes is provided in a separate file. We have provided a SVG document, which shows the Associations with arrows, but it is a bit crowded, due to the sheer number of associations. Thus, we have also provide a task 4.java file, showing the associations explicitly through plantuml notation. This UML was generated using www.plantuml.com.
 
 Task 5: What we have leared from this Code Review
 <FILL IN HERE 50+ words>
