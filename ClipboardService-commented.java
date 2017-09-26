@@ -389,6 +389,9 @@ public class ClipboardService extends SystemService {
         }
     }
 //***********************************************BLOCK-3: BEGINS    Author: Sujit Kumar***********************************************************
+   /*IClipboard.Stub extends Binder and implements IClipboard.
+     This class, ClipboardImpl, extends IClipboard.Stub
+   */
     private class ClipboardImpl extends IClipboard.Stub {
         @Override
         public boolean onTransact(int code, Parcel data, Parcel reply, int flags)
@@ -462,8 +465,7 @@ public class ClipboardService extends SystemService {
             }
         }
 //***********************************************BLOCK-4: BEGINS      Author: Shawn Bailey***********************************************************
-         /*         
-		 Getter method which returns the primaryClip found inside the private inner PerUserClipboard,
+         /*Getter method which returns the primaryClip found inside the private inner PerUserClipboard,
 		 which is defined at the end of BLOCK-2 in this file.
 
 		 The parameter, String pkg, corresponds to the package who is trying to access and read the primaryClip.
@@ -600,9 +602,25 @@ public class ClipboardService extends SystemService {
                 return getClipboard().primaryClip != null;
             }
         }
+        /*The first parameter, IOnPrimaryClipChangedistener listener, comes from 
+        the import of android.content.IOnPrimaryClipChangedListener.  This is an aidl file,
+        which stands for android interface definition language. An aidl file is used to define
+        the programming interface that a client and service agree upon in order to communicate 
+        using IPC. The import is a oneway interface. Here, the oneway keyword modifies the behavior of 
+        remote calls, so that when used, the call does not block. The call will instead send the 
+        transaction data and immediately return.
 
+        The oneway interface has one method to implement, called void dispatchPrimaryClipChanged(). This method gets
+        its definition in java/android/content/ClipBoardManager.java
+        
+        This interface is also part of IClipboard.aidl, which is what this private inner class implements
 
-        //TODO: Finish commenting theses two methods in more detail
+        The second parameter, String callingPackage, corresponds to the package who is trying to listen to the primaryClip.
+        
+        This method registers listener to the RemoteCallbackList associated with the DataClip primaryClip stored in 
+        PerUserClipboard, a private inner class defined in BLOCK-2 of this file. It associates the callingPackage with the 
+        listener being registered*/
+
         /* Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
 		 that class's method. */
         @Override
@@ -616,13 +634,34 @@ public class ClipboardService extends SystemService {
         	 calling threads will be forced to block and wait for their exclusive turn to use this operation*/
             synchronized (this) {
             	/*register callingPackage as a listener for the ClipData primaryClip stored inside the
-            	private inner class PerUserClipboard, found in BLOCK-2*/
+            	private inner class PerUserClipboard, found in BLOCK-2
+
+                Here, we grab the RemoteCallbackList of IOnPrimaryClipChangedListener stored in PerUserClipboard
+                RemoteCallback comes from the import android.os.RemoteCallbackList.
+
+                Performs locking of the underlying list of interfaces to deal with
+                multithreaded incoming calls, and a thread-safe way to iterate over a
+                snapshot of the list without holding its lock. It also cleans the list if a process goes away,
+                using an IBinder.DeathRecipient to keep track of such occurences. 
+
+                Below, register takes two arguments, the second being optional. The first is a callback interface,
+                in this case an IOnPrimaryClipChangedListener, and the second is an Object cookie, which provides additional
+                data to be associated with this call back. In this case, cookie is of type ListenerInfo, 
+                which stores the caller's user id and the callingPackage associated with it. Note that everything 
+                in java extends the Object class, giving quite a bit of flexibility for what is a legal cookie here.
+
+                ListenerInfo is a private inner class of this file, defined in BLOCK-2.
+                */
                 getClipboard().primaryClipListeners.register(listener,
                         new ListenerInfo(Binder.getCallingUid(), callingPackage));
             }
         }
 
-         /* Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
+        /*This method unregisters listener, an IOnPrimaryClipChangedListener interface, from the 
+        RemoteCallbackList associated with ClipData primaryClip stored in PerUserClipboard,
+        a private inner class defined in BLOCK-2 of this file. */
+
+         /*Since this class ClipBoardImpl extends IClipboard.Stub, this method overrides  
 		 that class's method. */
         @Override
         public void removePrimaryClipChangedListener(IOnPrimaryClipChangedListener listener) {
@@ -802,7 +841,7 @@ public class ClipboardService extends SystemService {
 /* Method name: checkUriOwnerLocked
 
 Parameter: 1. uri object of type Uri
-           2. uid if int type 
+           2. uid of int type 
 
 */
 
@@ -929,55 +968,157 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
         }
     }
 //*********************************************** BLOCK-10: BEGINS      Author: Shawn Bailey***********************************************************
+    /*This is a private method. The final keywords means the method cannot be overriden by subclasses.
+    It takes a Uri uri as a parameter, which comes from the import android.net.Uri. URI stands for 
+    uniform resource identifiers. They are a compact string of characters for identifying an 
+    abstract or physical resource. A website URL is an example, but URI's represent and identify
+    many other resources.
+
+    The "four main components" of a hierarchical URI consist of
+    <scheme>://<authority><path>?<query>
+
+    This method unlocks a Uri for reading and writing*/
     private final void revokeUriLocked(Uri uri) {
+        /*Extract the user id from the provided Uri.
+
+        ContentProviders are one of the basic components of Android applications, used to 
+        supply applications with some sort of content. 
+        Here, the second parameter seen in the getUserIdFromUri() method
+        is the defaultUserId returned if the provided uri is null.
+        The method is static, which is why it can be called on the class itself here.*/
         int userId = ContentProvider.getUserIdFromUri(uri,
                 UserHandle.getUserId(Binder.getCallingUid()));
+        /*Reset the identity of the incoming IPC on the current thread.  
+        Returns an opaque token that can be used to restore the original calling 
+        identity by passing it to Binder.restoreCallingIdentity(), which is done
+        at the end of this method. The opaque token is being stored in long ident,
+        which is short for identity.
+
+        Again, clearCallingIdentity() is a static method in the Binder class,
+        which is why it is being called on the Binder class itself.*/
         long ident = Binder.clearCallingIdentity();
+        /* Next, we try to give the uri read and write permissions, thus effectively 
+        revoking them from being locked out of this Clipboard service.*/
         try {
+            /*set uri to the same uri, but without its user id*/
             uri = ContentProvider.getUriWithoutUserId(uri);
+            /*mAm is a final instance of the interface IActivityManager, declared in this file in BLOCK-2.
+            This method, revokeUriPermissionFromOwner(), can throw 
+            a RemoteException, which is why we catch it if that occurs. 
+			
+			mPermissionOwner is an IBinder, but is being used as a IApplicationThread here. This can be done
+			because IApplicationThread implements the interface IInterface, which is the base class for 
+			Binder interfaces. IInterface has a getter method for IBinder called asBinder(). 
+			When a new interface is being defined, such as IApplicationThread, it must derive from IInterface. 
+			asBinder() retrieves the Binder object associated with IInterface. 
+
+            An Intent is a description of an operation to be performed. Intent also has some modes predefined inside the class.
+            Here, we are granting mPermissionOwner permission to perform read and write operations on the URI in the Intent's data and URIs
+            specified in its ClipData. */
             mAm.revokeUriPermissionFromOwner(mPermissionOwner, uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
                     userId);
-        } catch (RemoteException e) {
-        } finally {
+        }
+        /* we catch the RemoteException if it is thrown. Note that RemoteException
+        is the parent exception for all Binder remote-invocation errors.*/  
+        catch (RemoteException e) {
+        }
+        /*the finally block gets executed whether the try block executed without failure or whether
+        something went wrong and a RemoteException was caught
+
+        in either case, we restore the calling thread's identity using the opaque token
+        stored in long ident.
+
+        restoreCallingIdentity() is a static method in the Binder class,
+        which is why it is being called on the Binder class itself.*/
+        finally {
             Binder.restoreCallingIdentity(ident);
         }
     }
 
+    /*The parameter, ClipData.Item is coming from the public class Item found inside ClipData. 
+    It represents a description of a single item in a ClipData.
+
+    This method unlocks the item for reading and writing*/
+
+    /*This is a private method. The final keywords means the method can not be overriden by subclasses.*/
     private final void revokeItemLocked(ClipData.Item item) {
+        /*first, if the item's URI is not null, then we unlock the URI 
+        by calling revokeUriLocked, which is the method commented above this one.*/
         if (item.getUri() != null) {
             revokeUriLocked(item.getUri());
         }
+        /*next, we extract the Intent from within item.
+        Recall  An Intent is a description of an operation to be performed. 
+        Intent also has some modes predefined inside the class.*/
         Intent intent = item.getIntent();
+        /*getData() is a method which  retrieves the data this intent is operating on.
+        The data is represented as another URI.
+
+        if the intent is not null and the data of the intent is also not null,
+        then we unlock the URI of data for reading and writing using the revokeUriLocked,
+        which is the method commented above this one.*/
         if (intent != null && intent.getData() != null) {
             revokeUriLocked(intent.getData());
         }
     }
 
+    /*The parameter, PerUserClipboard clipboard is coming from the private inner class of this file,
+    defined in BLOCK-2. It represents a description of a single item in a ClipData.
+
+    This method unlocks all items for reading and writing within the clipboard*/
+
+    /*This is a private method. The final keywords means the method can not be overriden by subclasses.*/
     private final void revokeUris(PerUserClipboard clipboard) {
+    	/*if primaryClip is null inside clipboard, there is nothing to unlock so we return immediately*/
         if (clipboard.primaryClip == null) {
             return;
         }
+        /*extract the number of items, from the ArrayList of Items called mItems, found in primaryClip, 
+        which is again a ClipData instance. store the size in integer N, to be used in the coming for loop*/
         final int N = clipboard.primaryClip.getItemCount();
+        /*iterate over each item in primaryClip, grabbing each item using the getItemAt() method,
+        and unlock the items for reading and writing using the revokItemLocked method, commented
+        above this one*/
         for (int i=0; i<N; i++) {
             revokeItemLocked(clipboard.primaryClip.getItemAt(i));
         }
     }
 
+    /*returns true or false, indicating whether the clipboard can be accessed for a specified operation 
+    by the application associated with the callingPackage and calling user id.*/
     private boolean clipboardAccessAllowed(int op, String callingPackage, int callingUid) {
         // Check the AppOp.
+        /*mAppOps is an instance of AppOpsManager which is an API for tracking application
+        operations.
+
+        checkOp determines whether an application is able to perform the operation op.
+        it returns an integer, which is being compared to AppOpsManager.MODE_ALLOWED.
+        if the returned value does not indicate that the mode is allowed, then we immediately
+        return false, inidicating the clipboard can not be accessed by the calling application*/
         if (mAppOps.checkOp(op, callingUid, callingPackage) != AppOpsManager.MODE_ALLOWED) {
             return false;
         }
         try {
             // Installed apps can access the clipboard at any time.
+            /*Here, AppGlobals is a class which keeps track of certain globals related to a process.
+			
+			We grab the package manager and check if the application associated with callingPackage
+			and callingUid is not an instant application. If it is not, that indicates we are dealing
+			with an installed application, which can access the clipboard. If it is an instant application,
+			it may not be able to access the clipboard, particularly if it is a background process.
+            */
             if (!AppGlobals.getPackageManager().isInstantApp(callingPackage,
                         UserHandle.getUserId(callingUid))) {
                 return true;
             }
             // Instant apps can only access the clipboard if they are in the foreground.
+            /*return wherether the calling user id is in the foreground or not. if it is, is can access 
+            the clipboard. if it is in the background, then it is not allowed to access the clipboard.*/
             return mAm.isAppForeground(callingUid);
-        } catch (RemoteException e) {
+        }/*if a RemoteException occured, the function could not determine if the application
+        can access the clipboard, so it makes a failure log using Slog.java and returns false. */ 
+        catch (RemoteException e) {
             Slog.e("clipboard", "Failed to get Instant App status for package " + callingPackage,
                     e);
             return false;
