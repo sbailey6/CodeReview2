@@ -389,14 +389,52 @@ public class ClipboardService extends SystemService {
         }
     }
 //***********************************************BLOCK-3: BEGINS    Author: Sujit Kumar***********************************************************
-   /*IClipboard.Stub extends Binder and implements IClipboard.
-     This class, ClipboardImpl, extends IClipboard.Stub
-   */
+   /* 
+1. Class name: ClipboardImpl
+             A child class of ClipboardImpl is derived from  IClipboard.Stub with private scope
+             visibiility: private
+                class is private. hus, data and methods are scoped only
+             
+        1.1 Method: onTransact(), overridden by the definition in this class, i.e. child 
+            This method calls an IBinder object and receives a call from Binder object. The call is synchronous, and thus, it calls IBinder object 
+            only when it has returned from Binder object.        
+            
+            It takes four arguments: 
+                1.1.1 code, flags of type int
+                1.1.2 data, reply of type Parcel
+            Return Type: returns true or false upon the success/failure of the transaction
+        
+        
+        1.2 Method: setPrimaryClip(), ovverridden by the definition in this class, i.e. child 
+                This method checks for user privilidges,fethes user profiles, ensures whether lock can be granted for the thread using monitors. If
+                the priviledges are valid for the user, it instanriates an object of ClipData for the user.
+            visibility: public
+            
+            Retrun type: void
+            
+            It takes two arguments: 
+                1.2.1.1 an object of Clipdata 
+                1.2.1.2 the name of the calling package
+            
+            variables: 
+                1.2.2.1 Item- an object of class ClipData
+                1.2.2.2 canCopy- local variable type boolean variable
+                1.2.2.3 related - local variable of type List
+                
+**method: synchronized() ensures that only one thread is executing at one time inside the process associated with this object               
+*/        
+
+ 
+     
+    
     private class ClipboardImpl extends IClipboard.Stub {
         @Override
+        // The method returns true or false as per the transaction success/failure
         public boolean onTransact(int code, Parcel data, Parcel reply, int flags)
                 throws RemoteException {
             try {
+            //The onTransact() method is invoked from the parent class definition
+             
                 return super.onTransact(code, data, reply, flags);
             } catch (RuntimeException e) {
                 if (!(e instanceof SecurityException)) {
@@ -406,28 +444,45 @@ public class ClipboardService extends SystemService {
             }
 
         }
-
+        
+        //clip is an object of class Clipdata, and callingPackage is the package that has invoked the transaction
+        //returns void
         @Override
         public void setPrimaryClip(ClipData clip, String callingPackage) {
+        //method: synchronized() ensures that only one thread is executing at one time inside the process associated with this object. 
+        //The object aquires a lock using monitors and all other threads seeking the same resources are put in suspended state
             synchronized (this) {
+                //checks if there is new text in clip
+                //method getItemCount() is defined in class Clipdata, and returns size of the string  
                 if (clip != null && clip.getItemCount() <= 0) {
                     throw new IllegalArgumentException("No items");
                 }
+                //getItemAt() is defined in class ClipData, and returns the text in the indexed position
+                //mHostClipboardMonitor is an object of HostClipboardMonitor class which, in turn, implements runnable
                 if (clip.getItemAt(0).getText() != null &&
                     mHostClipboardMonitor != null) {
                     mHostClipboardMonitor.setHostClipboard(
                         clip.getItemAt(0).getText().toString());
                 }
+                //method: callingUid is defined in class Binder which implements IBinder interface
+                //method: callingUid rerurns the userHandle of the process that has invoked the transaction
                 final int callingUid = Binder.getCallingUid();
+                //method: clipboardAccessAllowed checks if the calling package is allowed to access clipboard
                 if (!clipboardAccessAllowed(AppOpsManager.OP_WRITE_CLIPBOARD, callingPackage,
                             callingUid)) {
                     return;
                 }
+                //method: checkDataOwnerLocked invokes checkItemOwnerLocked and checks the lock taken by each user id on each data item
                 checkDataOwnerLocked(clip, callingUid);
+                //the variable userId has been declared as final, meaning the assigned value will not change throughout the program
                 final int userId = UserHandle.getUserId(callingUid);
                 PerUserClipboard clipboard = getClipboard(userId);
+                //primaryClip is assigned the value null to revoke clipboard access of the user
                 revokeUris(clipboard);
+                //reset the clipboard access, reset clipboard to null, brodcast the change to all the users, and restores the user permissions
                 setPrimaryClipInternal(clipboard, clip);
+                //return the profiles of the user id passed as argument
+                //if the returned profile is not null, invoke user manager to fetch user restrictions, reset the user permissions and initialize clipboard with null  
                 List<UserInfo> related = getRelatedProfiles(userId);
                 if (related != null) {
                     int size = related.size();
@@ -464,6 +519,7 @@ public class ClipboardService extends SystemService {
                 }
             }
         }
+
 //***********************************************BLOCK-4: BEGINS      Author: Shawn Bailey***********************************************************
          /*Getter method which returns the primaryClip found inside the private inner PerUserClipboard,
 		 which is defined at the end of BLOCK-2 in this file.
@@ -917,19 +973,80 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
         }
     }
 //*********************************************** BLOCK-9: BEGINS      Author: Sujit Kumar***********************************************************
+/*
+1. Method: grantUriLocked()
+                This method sources user id, resets the identity of the current inter process communication's thread, grants permissions to the user, 
+                and restores the identity of the current inter process communication's thread.
+                
+                The method is marked as final, indicating that it can not be changed throughout the program.
+            visibility: private, accessible by the objects only of the class it is declared in
+            
+            Retrun type: void
+                        
+            It takes three arguments: 
+                1.1.1 an object of abstract class Uri 
+                1.1.2 calling package name, 
+                1.1.3 user id
+            
+            variables: 
+                1.2.1 Item- an object of class ClipData
+                1.2.2 canCopy- local variable type boolean variable
+                1.2.3 related - local variable of type List 
+                
+ 2. Method: grantItemLocked() 
+                grants lock on the resources to the thread using monitors.
+                invokes method grantUriLocked with Clipdata object, Intent object  
+                if the Clipdata/intent object is not null, lock is granted
+            
+            Return: void
+            
+            visibility: private, accessible by the objects only of the class it is declared in
+            
+            Takes three arguments: 
+                2.1.1 Clipdata/Intent object 
+                2.1.2 calling package
+                2.1.3 user id
+
+3. method: addActiveOwnerLocked()
+            Resets the identity of the current inter process communication's thread, grants permissions to the user, 
+            restores the identity of the current inter process communication's thread, and adds the user id in the set of owners of the current thread.
+            
+            Return: void         
+            Takes two argumens: 
+                3.1.1 user id 
+                3.1.2 name of calling package 
+            variables: 
+                All these three variables are declared locally, and as final. This means they are locally scoped, and rvalue can not be 
+                    re-assigned in the scope.
+                3.2.1 pm = object of type IPackageManager returned by method getPackageManager()
+                3.2.2 targetUserHandle = user Id (type integer) returned by method getCallingUserId()
+                3.2.3 oldIdentity = identity of current thread (type long integer) returned by method clearCallingIdentity()
+
+method: synchronized() ensures that only one thread is executing at one time inside the process associated with this object                
+ */
+                
+
+//method: grantUriLocked
+// invokes methods clearCallingIdentity and restoresCallingIdentity defined in public class Binder
     private final void grantUriLocked(Uri uri, String pkg, int userId) {
+        //reset the identity of the current inter process communication's thread
         long ident = Binder.clearCallingIdentity();
         try {
+            //get user id of the user from Uri details
             int sourceUserId = ContentProvider.getUserIdFromUri(uri, userId);
             uri = ContentProvider.getUriWithoutUserId(uri);
             mAm.grantUriPermissionFromOwner(mPermissionOwner, Process.myUid(), pkg,
                     uri, Intent.FLAG_GRANT_READ_URI_PERMISSION, sourceUserId, userId);
         } catch (RemoteException e) {
         } finally {
+        ////restore the identity of the current inter process communication's thread
             Binder.restoreCallingIdentity(ident);
         }
     }
-
+    
+    //invokes method grantUriLocked with Clipdata object, Intent object  
+    //if the Clipdata/intent object is not null, lock is granted
+    
     private final void grantItemLocked(ClipData.Item item, String pkg, int userId) {
         if (item.getUri() != null) {
             grantUriLocked(item.getUri(), pkg, userId);
@@ -939,12 +1056,15 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
             grantUriLocked(intent.getData(), pkg, userId);
         }
     }
-
+    //method: addActiveOwnerLocked receives two argumens: user id and calling package
+    //
     private final void addActiveOwnerLocked(int uid, String pkg) {
+    //name of package manager, targetUserHandle, old Identity is assigned as final, that means it will not change throughout the program
         final IPackageManager pm = AppGlobals.getPackageManager();
         final int targetUserHandle = UserHandle.getCallingUserId();
         final long oldIdentity = Binder.clearCallingIdentity();
         try {
+        //information of the package is returned to pi
             PackageInfo pi = pm.getPackageInfo(pkg, 0, targetUserHandle);
             if (pi == null) {
                 throw new IllegalArgumentException("Unknown package " + pkg);
@@ -958,7 +1078,9 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
         } finally {
             Binder.restoreCallingIdentity(oldIdentity);
         }
+        // method: getClipboard()instantiates an object of class PerUserClipboard for each user id 
         PerUserClipboard clipboard = getClipboard();
+        //Item count is calculated, item is locked, and permissions are added
         if (clipboard.primaryClip != null && !clipboard.activePermissionOwners.contains(pkg)) {
             final int N = clipboard.primaryClip.getItemCount();
             for (int i=0; i<N; i++) {
@@ -967,6 +1089,9 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
             clipboard.activePermissionOwners.add(pkg);
         }
     }
+
+
+
 //*********************************************** BLOCK-10: BEGINS      Author: Shawn Bailey***********************************************************
     /*This is a private method. The final keywords means the method cannot be overriden by subclasses.
     It takes a Uri uri as a parameter, which comes from the import android.net.Uri. URI stands for 
