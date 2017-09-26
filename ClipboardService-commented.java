@@ -214,180 +214,229 @@ class HostClipboardMonitor implements Runnable {
 }
 //*********************************************** BLOCK-2 BEGINS    Author: Drishti Arora***********************************************************
 /**
- * Implementation of the clipboard for copy and paste.
- */
- 
- /*
+	 * Implementation of the clipboard for copy and paste.
+	 */
+	 
+	 /*
 
-Class : ClipboardService
-      : Inherits SystemService class
- 
- */
-public class ClipboardService extends SystemService {
+	Class : ClipboardService
+		  : Inherits SystemService class
+	 
+	
+	
+	Child Class: ClipboardService 
+ 	Parent Class : SystemService
+ 	
+ 	The class performs the copy and paste operations for the clipboard.
+	
+	*/public class ClipboardService extends SystemService {
 
 
-/* Variables: 1. TAG 
-            --> String type 
-            --> Static and final 
-            2. IS_EMULATOR
-            --> boolean type- returns true or false
-*/
-    private static final String TAG = "ClipboardService";
-    private static final boolean IS_EMULATOR =
-        SystemProperties.getBoolean("ro.kernel.qemu", false);
+	/* Variables: 1. TAG 
+				--> String type 
+				--> Static: used for memory management. Also it belongs only to the class, shared by each and every instance of that class.
+				--> final: the value assigned won't change 
+				--> Set as "ClipboardService"
+				2. IS_EMULATOR
+				--> boolean type- returns true or false
+				--> static: Static: used for memory management. Also it belongs only to the class, shared by each and every instance of that class.
+				--> final: the value assigned won't change
+				--> Default value set as false
+	*/
+	
+	    private static final String TAG = "ClipboardService";
+	    private static final boolean IS_EMULATOR =
+	        SystemProperties.getBoolean("ro.kernel.qemu", false);
 
-        /*
-        Objects : mAm of IActivityManager
-                : mUm of IUserManager
-                : mPm of PackageManager
-                :mAppOps of AppOpsManager
-                : mPermissionOwner of IBinder
-        
-        */
-        
-    private final IActivityManager mAm;
-    private final IUserManager mUm;
-    private final PackageManager mPm;
-    private final AppOpsManager mAppOps;
-    private final IBinder mPermissionOwner;
-    
-    // mHostClipboardCallback of HostClipboardMonitor declared as null
-    private HostClipboardMonitor mHostClipboardMonitor = null;
-    
-    // thread mHostClipboardMonitor declared null 
-    private Thread mHostMonitorThread = null;
+			/*
+			Objects : mAm of IActivityManager
+					: mUm of IUserManager
+					: mPm of PackageManager
+					: mAppOps of AppOpsManager
+					: mPermissionOwner of IBinder
+			
+			Scope of the objects is "private"
+			--> only visible to the particular class in which they are defined.
+			*/
+			
+	    private final IActivityManager mAm;
+	    private final IUserManager mUm;
+	    private final PackageManager mPm;
+	    private final AppOpsManager mAppOps;
+	    private final IBinder mPermissionOwner;
+		
+		// mHostClipboardCallback of HostClipboardMonitor declared as null
+	    private HostClipboardMonitor mHostClipboardMonitor = null;
+		
+		// thread mHostClipboardMonitor declared null 
+	    private Thread mHostMonitorThread = null;
 
-    
-    // declaring a sparse array of PerUserClipboard type 
-    private final SparseArray<PerUserClipboard> mClipboards = new SparseArray<>();
+		
+		// declaring a sparse array of PerUserClipboard type 
+	    private final SparseArray<PerUserClipboard> mClipboards = new SparseArray<>();
 
-    /**
-     * Instantiates the clipboard.
-     */
-     
-     // Constructor 
-     // passing the parameter object context of type Context 
-    public ClipboardService(Context context) {
-        // Parent class called 
-        super(context);
+	    /**
+	     * Instantiates the clipboard.
+	     */
+		 
+		 // Constructor 
+		 // passing the parameter object context of type Context 
+	    public ClipboardService(Context context) {
+			
+	    	// Parent class called 
+	        super(context);
 
-        // setting the variables to the values obtained from the methods 
-        mAm = ActivityManager.getService();
-        mPm = getContext().getPackageManager();
-        mUm = (IUserManager) ServiceManager.getService(Context.USER_SERVICE);
-        mAppOps = (AppOpsManager) getContext().getSystemService(Context.APP_OPS_SERVICE);
-        
-        // creating object of IBinder and setting it to null 
-        IBinder permOwner = null;
-        
-        //try catch block for catching the exception 
-        try {
-            
-            // passing the value to the object 
-            permOwner = mAm.newUriPermissionOwner("clipboard");
-        } catch (RemoteException e) {
-            Slog.w("clipboard", "AM dead", e);
-        }
-        // passing the value of permOwner to mPermissionOwner
-        mPermissionOwner = permOwner;
-        
-        // if IS_EMULATOR is false
-        if (IS_EMULATOR) {
-            
-            // creating an object 
-            mHostClipboardMonitor = new HostClipboardMonitor(
-                new HostClipboardMonitor.HostClipboardCallback() {
-                    
-                    
-                    // Overiding the onHostClipboardUpdated method
-                    // Parameter: contents- string type 
-                    @Override
-                    public void onHostClipboardUpdated(String contents){
-                        
-                        // creating and initializing the object "clip" of ClipData 
-                        // new array of String type 
-                        ClipData clip =
-                            new ClipData("host clipboard",
-                                         new String[]{"text/plain"},
-                                         new ClipData.Item(contents));
-                        synchronized(mClipboards) {
-                            setPrimaryClipInternal(getClipboard(0), clip);
-                        }
-                    }
-                });
-                
-                // setting the thread object and passing the object mHostClipboardMonitor 
-            mHostMonitorThread = new Thread(mHostClipboardMonitor);
-            
-            // starting the thread
-            mHostMonitorThread.start();
-        }
-    }
-    
-    // Overiding method onStart
+			// setting the variables to the values obtained from the methods 
+	        // value of getService method of ActivityMAnager is stored in the variable mAm 
+	        mAm = ActivityManager.getService();
+	       
+	        // value of getPackageMAnager of getContext method stored in mPm
+	        mPm = getContext().getPackageManager();
+	        
+	        // value of getService method of ServiceManager is stored in mUm when "Context.USER_SERVICE" is passed.
+	        // Typecasted to IUserManager
+	        mUm = (IUserManager) ServiceManager.getService(Context.USER_SERVICE);
+	        
+	        // value of getSystemServive of getContext method is stored in mAppOps when App Operation service of context "Context.APP_OPS_SERVICE" is passed.
+	        // Typecasted to AppOpsManager
+	        mAppOps = (AppOpsManager) getContext().getSystemService(Context.APP_OPS_SERVICE);
+			
+			// creating object of IBinder and setting it to null 
+	        IBinder permOwner = null;
+			
+			//try catch block for catching the exception 
+	        try {
+				
+				// passing the value to the object 
+	        	// string "clipboard" passed as a parameter
+	        	// which is stored in permOwner
+	            permOwner = mAm.newUriPermissionOwner("clipboard");
+	        } catch (RemoteException e) {
+	            Slog.w("clipboard", "AM dead", e);
+	        }
+			// passing the value of permOwner to mPermissionOwner
+	        mPermissionOwner = permOwner;
+			
+			// if IS_EMULATOR is false
+	        if (IS_EMULATOR) {
+				
+				// creating an object 
+	            mHostClipboardMonitor = new HostClipboardMonitor(
+	                new HostClipboardMonitor.HostClipboardCallback() {
+						
+						
+						// Overiding the onHostClipboardUpdated method
+						// Parameter: contents- string type 
+	                	// This method updates the Host Clipboard
+	                    @Override
+	                    public void onHostClipboardUpdated(String contents){
+							
+							// creating and initializing the object "clip" of ClipData 
+							// new array of String type 
+	                    	// new string which takes "text/plain"
+	                    	// updates the content items of clipData
+	                    	// Parameter : contents
+	                        ClipData clip =
+	                            new ClipData("host clipboard",
+	                                         new String[]{"text/plain"},
+	                                         new ClipData.Item(contents));
+	                        
+	                        // for thread synchronization : as only one thread can be executed at a time.
+	                        synchronized(mClipboards) {
+	                        	// Primary internal clip is set.
+	                            setPrimaryClipInternal(getClipboard(0), clip);
+	                        }
+	                    }
+	                });
+					
+					// setting the thread object and passing the object mHostClipboardMonitor 
+	            mHostMonitorThread = new Thread(mHostClipboardMonitor);
+				
+				// starting the thread
+	            mHostMonitorThread.start();
+	        }
+	    }
+		
+		// Overiding method onStart
+	    // This function erforms the start operation for the clipboard service
 
-    @Override
-    public void onStart() {
-        publishBinderService(Context.CLIPBOARD_SERVICE, new ClipboardImpl());
-    }
+	    @Override
+	    public void onStart() {
+	        publishBinderService(Context.CLIPBOARD_SERVICE, new ClipboardImpl());
+	    }
 
-    // overriding onCleanupUser
-    // passed parameter"userId" of int type
-    @Override
-    public void onCleanupUser(int userId) {
-        synchronized (mClipboards) {
-            
-            // removing the userId 
-            mClipboards.remove(userId);
-        }
-    }
+		// overriding onCleanupUser
+		// passed parameter"userId" of int type
+	    @Override
+	    public void onCleanupUser(int userId) {
+	        synchronized (mClipboards) {
+				
+				// removing the userId 
+	            mClipboards.remove(userId);
+	        }
+	    }
 
-    
-    /* Class : ListenerInfo
-    Variable: 1. mUid
-               --> int type 
-               --> final- value cant change
-            2. mPackageName
-            --> String type 
-            --> final 
-               
-               
-    */
-    private class ListenerInfo {
-        final int mUid;
-        final String mPackageName;
-        
-        // calling ListenerInfo.
-        // Parameters: 1. uid- int type
-                    // 2. packageName- String type
-                       
-                       
-        ListenerInfo(int uid, String packageName) {
-            // seting vlue of uid to mUid and packageName to mPackageName
-            mUid = uid;
-            mPackageName = packageName;
-        }
-    }
+		
+	 /*   Class : ListenerInfo
+		 
+		Variable: 1. mUid
+				   --> int type 
+				   --> final: value can't change once assigned
+				   --> private class: it's an inner class for class "ClipboardService" which extends SystemService.
+				 
+				  2. mPackageName
+				   --> String type 
+				   --> final: value can't change once assigned.
+				   
+		*/
+	    
+	    private class ListenerInfo {
+	        final int mUid;
+	        final String mPackageName;
+			
+			/* default constructor: ListenerInfo(){}
+			 Parameters: 1. uid- int type
+						 2. packageName- String type
+						   
+			*/
+	        
+	        ListenerInfo(int uid, String packageName) {
+				// seting vlue of uid to mUid and packageName to mPackageName
+	            mUid = uid;
+	            mPackageName = packageName;
+	        }
+	    }
 
-    
-    // Class : PerUserClipboard
-    // Variable : userid- int type and final 
-    private class PerUserClipboard {
-        final int userId;
+		
+	/*	 Class : PerUserClipboard
+		 Variable : userid
+		 			--> final : value won't change once assigned.
+	    			--> int data type. 
+	  
+	    */
+	    private class PerUserClipboard {
+	        final int userId;
 
-        // object creation 
-        final RemoteCallbackList<IOnPrimaryClipChangedListener> primaryClipListeners
-                = new RemoteCallbackList<IOnPrimaryClipChangedListener>();
+			// object creation 
+	        final RemoteCallbackList<IOnPrimaryClipChangedListener> primaryClipListeners
+	                = new RemoteCallbackList<IOnPrimaryClipChangedListener>();
 
-        ClipData primaryClip;
-// HashSet 
-        final HashSet<String> activePermissionOwners
-                = new HashSet<String>();
+	        ClipData primaryClip;
+	// Using HashSet of type String
+	// Uses the Hash Table for storing the data	ny using hashing
+	        final HashSet<String> activePermissionOwners
+	                = new HashSet<String>();
 
-        PerUserClipboard(int userId) {
-            this.userId = userId;
-        }
-    }
+	      /* Default constructor
+	       Parameter: userId
+	        			--> int data type
+	        			
+	        */			
+	        PerUserClipboard(int userId) {
+	            this.userId = userId;
+	        }
+	    }
+
 //***********************************************BLOCK-3: BEGINS    Author: Sujit Kumar***********************************************************
    /* 
 1. Class name: ClipboardImpl
@@ -821,21 +870,40 @@ public class ClipboardService extends SystemService {
         }
     }
 //*********************************************** BLOCK-6: BEGINS     Author: Drishti Arora***********************************************************
-   List<UserInfo> getRelatedProfiles(int userId) {
-        final List<UserInfo> related;
-        final long origId = Binder.clearCallingIdentity();
-       
-    // Try catch block for Remote Exception
-       try {
-            related = mUm.getProfiles(userId, true);
-        } catch (RemoteException e) {
-            Slog.e(TAG, "Remote Exception calling UserManager: " + e);
-            return null;
-        } finally{
-            Binder.restoreCallingIdentity(origId);
-        }
-        return related;
-    }
+   // List for the information of the usuer.
+	    
+	    
+	   List<UserInfo> getRelatedProfiles(int userId) {
+		   
+		   // User information list variable : related
+		   // final : value won't change once assigned.
+	        final List<UserInfo> related;
+	        
+	        /* variable : origId
+	        			--> stores the original user Id
+	        			--> final : value won't change once assigned.
+	        			--> long data type
+	        			--> stores the value returned by the method "clearCallingIdentity" of the Binder.
+	        */			
+	        final long origId = Binder.clearCallingIdentity();
+	       
+		// Try catch block for Remote Exception
+		   try {
+			   // variable "related" gets the profiles of the user by entering the userId and stores them in the variable "related".
+	            related = mUm.getProfiles(userId, true);
+	        } catch (RemoteException e) {
+	            Slog.e(TAG, "Remote Exception calling UserManager: " + e);
+	            return null;
+	        } finally{
+	        	
+	        	// restores the calling identity of the user by passing the userId of the user
+	            Binder.restoreCallingIdentity(origId);
+	        }
+		   
+		   // value of variable "related" is returned.
+	        return related;
+	    }
+
 //*************************************BLOCK-7 BEGINS	Author: Rashika Gupta***********************************************************
 /* Method :   setPrimaryClipInternal
             --> Parameter: clipboard of PerUserClipboard type and clip of ClipData type 
@@ -896,82 +964,91 @@ public class ClipboardService extends SystemService {
 //*********************************************** BLOCK-8: BEGINS     Author: Drishti Arora***********************************************************
 /* Method name: checkUriOwnerLocked
 
-Parameter: 1. uri object of type Uri
-           2. uid of int type 
+	Parameter: 1. Object "uri"
+				--> Uri type
+			   2. uid 
+			   --> int data type
 
-*/
+	*/
 
-  private final void checkUriOwnerLocked(Uri uri, int uid) {
-      
-      // if content is not equal to the getScheme value of uri then return nothing
-        if (!"content".equals(uri.getScheme())) {
-            return;
-        }
-        
-        // ident of long type which takes the value of the cleared calling identity of Binder
-        long ident = Binder.clearCallingIdentity();
-        try {
-            // This will throw SecurityException for us.
- 
-/* checkGrantUriPermission method is called of mAm which checks the granted uri permission which takes the parameters uid, null, 
-uri value of getUriWithoutUserId method of contentProvider, FLAG_GRANT_READ_URI_PERMISSION of Intent which reads the granted uri permission 
-and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
- */ 
- 
- mAm.checkGrantUriPermission(uid, null, ContentProvider.getUriWithoutUserId(uri),
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                    ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)));
-                    // catchind REMOTE exception
-        } catch (RemoteException e) {
-        } finally {
-            // it restores the calling identity of the passed ident 
-            // Method name: restoreCallingIdentity of binder
-            Binder.restoreCallingIdentity(ident);
-        }
-    }
+	  private final void checkUriOwnerLocked(Uri uri, int uid) {
+		  
+		  // if string "content" is not equal to the getScheme value of uri then return nothing
+	        if (!"content".equals(uri.getScheme())) {
+	            return;
+	        }
+			
+			// ident of long type which takes the value of the cleared calling identity of Binder
+	        long ident = Binder.clearCallingIdentity();
+	        try {
+	            // This will throw SecurityException for us.
+	 
+	/* checkGrantUriPermission method is called of mAm which checks the granted uri permission which takes the parameters uid, null, 
+	uri value of getUriWithoutUserId method of contentProvider, FLAG_GRANT_READ_URI_PERMISSION of Intent which reads the granted uri permission 
+	and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
+	 */ 
+	 
+	 mAm.checkGrantUriPermission(uid, null, ContentProvider.getUriWithoutUserId(uri),
+	                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+	                    ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)));
+						// catchind REMOTE exception
+	        } catch (RemoteException e) {
+	        } finally {
+				// it restores the calling identity of the passed ident 
+				// Method name: restoreCallingIdentity of binder
+	            Binder.restoreCallingIdentity(ident);
+	        }
+	    }
 
-    
-    /* Method name : checkDataOwnerLocked
-                   : void type
-                Parameter: 1. item of ClipData
-                           2. uid of type int 
-        --> checking if the item owner is locked 
-    */
-    private final void checkItemOwnerLocked(ClipData.Item item, int uid) {
-        // if null 
-        if (item.getUri() != null) {
-            // check if locked 
-            checkUriOwnerLocked(item.getUri(), uid);
-        }
-        // getting intent of item and storing in intent variable of Intent 
-        Intent intent = item.getIntent();
-        
-        // if intent not null and getData does not returns null 
-        if (intent != null && intent.getData() != null) {
-            // check if locked - uid 
-            checkUriOwnerLocked(intent.getData(), uid);
-        }
-    }
-    
-    /* Method name: checkDataOwnerLocked
-                  : void type and final
-        Parameter: 1. data of ClipData type
-                2. uid of int type
-        Variable name: 1. N
-                    --> int type
-                    --> final
-                    --> stores the item count of data
+		
+		/* Method name : checkDataOwnerLocked
+					   : void type
+					Parameter: 1. item of ClipData
+							   2. uid
+							   --> int data type
+			--> checking if the item owner is locked 
+		*/
+		private final void checkItemOwnerLocked(ClipData.Item item, int uid) {
+			// if null 
+	        if (item.getUri() != null) {
+				// check if locked 
+	            checkUriOwnerLocked(item.getUri(), uid);
+	        }
+			// getting intent of item and storing in intent variable of Intent 
+	        Intent intent = item.getIntent();
+			
+			// if intent not null and getData does not returns null 
+	        if (intent != null && intent.getData() != null) {
+				// check if locked - uid 
+	            checkUriOwnerLocked(intent.getData(), uid);
+	        }
+	    }
+		
+		/* Method name: checkDataOwnerLocked
+					  --> void type : returns nothing
+					  -->final : value won't change once assigned.
+					  
+					  
+			Parameter: 	1. data of ClipData type
+						2. uid
+						--> int data type
+						
+			Variable name: 1. N
+						--> int type
+						--> final
+						--> stores the item count of data
 
-                */
+					*/
 
-    private final void checkDataOwnerLocked(ClipData data, int uid) {
-        final int N = data.getItemCount();
-        
-        // from i=0 till i<N incrementing value of i and checking if item owners locked for passed uid, item at ith value of data
-        for (int i=0; i<N; i++) {
-            checkItemOwnerLocked(data.getItemAt(i), uid);
-        }
-    }
+	    private final void checkDataOwnerLocked(ClipData data, int uid) {
+	        final int N = data.getItemCount();
+			
+			// from i=0 till i<N incrementing value of i and checking if item owners locked for passed uid, item at ith value of data
+	        for (int i=0; i<N; i++) {
+	            checkItemOwnerLocked(data.getItemAt(i), uid);
+	        }
+	    }
+
 //*********************************************** BLOCK-9: BEGINS      Author: Sujit Kumar***********************************************************
 /*
 1. Method: grantUriLocked()
