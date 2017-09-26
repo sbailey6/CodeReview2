@@ -8,8 +8,7 @@ Sujit Kumar  : skumar27@binghamton.edu
 
 Excellence Justification:
 -------------------------
-<FILL IN>
-
+While revieweing the clipboard service source code in the Android framework codebase, we have learnt how data is copied to the clipboard and placed in a new target location. We have worked to understand the constuct and the intent of the code. We have invested best possible efforts to understand user profile management, synchronous thread execution, user permission management, and text handling for clipboard service. It has been a balanced team effor to understand object oriented approach of Java programing, along with the understanding of a part of technical domain of implementation of Android framework. Thus, we claim a top-notch excellence score for this task. 
 
 
 More information:
