@@ -389,17 +389,46 @@ public class ClipboardService extends SystemService {
         }
     }
 //***********************************************BLOCK-3: BEGINS    Author: Sujit Kumar***********************************************************
-   /*IClipboard.Stub extends Binder and implements IClipboard.
-     This class, ClipboardImpl, extends IClipboard.Stub
-   */
-    //a child class of ClipboardImpl is derived from  IClipboard with private scope
-    //data and methods are scoped only locally 
+   /* 
+1. Class name: ClipboardImpl
+             A child class of ClipboardImpl is derived from  IClipboard.Stub with private scope
+             visibiility: private
+                class is private. hus, data and methods are scoped only
+             
+        1.1 Method: onTransact(), overridden by the definition in this class, i.e. child 
+            This method calls an IBinder object and receives a call from Binder object. The call is synchronous, and thus, it calls IBinder object 
+            only when it has returned from Binder object.        
+            
+            It takes four arguments: 
+                1.1.1 code, flags of type int
+                1.1.2 data, reply of type Parcel
+            Return Type: returns true or false upon the success/failure of the transaction
+        
+        
+        1.2 Method: setPrimaryClip(), ovverridden by the definition in this class, i.e. child 
+                This method checks for user privilidges,fethes user profiles, ensures whether lock can be granted for the thread using monitors. If
+                the priviledges are valid for the user, it instanriates an object of ClipData for the user.
+            visibility: public
+            
+            Retrun type: void
+            
+            It takes two arguments: 
+                1.2.1.1 an object of Clipdata 
+                1.2.1.2 the name of the calling package
+            
+            variables: 
+                1.2.2.1 Item- an object of class ClipData
+                1.2.2.2 canCopy- local variable type boolean variable
+                1.2.2.3 related - local variable of type List
+                
+**method: synchronized() ensures that only one thread is executing at one time inside the process associated with this object               
+*/        
+
+ 
+     
+    
     private class ClipboardImpl extends IClipboard.Stub {
         @Override
-        //method: onTransact is overridden by the definition in this class, i.e. child 
-        //The method takes four arguments: 
-        //                                code, flags of type int
-        //                                data, reply of type Parcel
         // The method returns true or false as per the transaction success/failure
         public boolean onTransact(int code, Parcel data, Parcel reply, int flags)
                 throws RemoteException {
@@ -415,8 +444,7 @@ public class ClipboardService extends SystemService {
             }
 
         }
-        //method: setPrimaryClip is overridden by the definition in this class, i.e child
-        // Takes four arguments, clip of type Clipdata and callingPackage of type String
+        
         //clip is an object of class Clipdata, and callingPackage is the package that has invoked the transaction
         //returns void
         @Override
@@ -491,6 +519,7 @@ public class ClipboardService extends SystemService {
                 }
             }
         }
+
 //***********************************************BLOCK-4: BEGINS      Author: Shawn Bailey***********************************************************
          /*Getter method which returns the primaryClip found inside the private inner PerUserClipboard,
 		 which is defined at the end of BLOCK-2 in this file.
@@ -944,8 +973,60 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
         }
     }
 //*********************************************** BLOCK-9: BEGINS      Author: Sujit Kumar***********************************************************
-    //method: grantUriLocked
-//takes arguments: an object of abstract class Uri, calling package name, user id
+/*
+1. Method: grantUriLocked()
+                This method sources user id, resets the identity of the current inter process communication's thread, grants permissions to the user, 
+                and restores the identity of the current inter process communication's thread.
+                
+                The method is marked as final, indicating that it can not be changed throughout the program.
+            visibility: private, accessible by the objects only of the class it is declared in
+            
+            Retrun type: void
+                        
+            It takes three arguments: 
+                1.1.1 an object of abstract class Uri 
+                1.1.2 calling package name, 
+                1.1.3 user id
+            
+            variables: 
+                1.2.1 Item- an object of class ClipData
+                1.2.2 canCopy- local variable type boolean variable
+                1.2.3 related - local variable of type List 
+                
+ 2. Method: grantItemLocked() 
+                grants lock on the resources to the thread using monitors.
+                invokes method grantUriLocked with Clipdata object, Intent object  
+                if the Clipdata/intent object is not null, lock is granted
+            
+            Return: void
+            
+            visibility: private, accessible by the objects only of the class it is declared in
+            
+            Takes three arguments: 
+                2.1.1 Clipdata/Intent object 
+                2.1.2 calling package
+                2.1.3 user id
+
+3. method: addActiveOwnerLocked()
+            Resets the identity of the current inter process communication's thread, grants permissions to the user, 
+            restores the identity of the current inter process communication's thread, and adds the user id in the set of owners of the current thread.
+            
+            Return: void         
+            Takes two argumens: 
+                3.1.1 user id 
+                3.1.2 name of calling package 
+            variables: 
+                All these three variables are declared locally, and as final. This means they are locally scoped, and rvalue can not be 
+                    re-assigned in the scope.
+                3.2.1 pm = object of type IPackageManager returned by method getPackageManager()
+                3.2.2 targetUserHandle = user Id (type integer) returned by method getCallingUserId()
+                3.2.3 oldIdentity = identity of current thread (type long integer) returned by method clearCallingIdentity()
+
+method: synchronized() ensures that only one thread is executing at one time inside the process associated with this object                
+ */
+                
+
+//method: grantUriLocked
 // invokes methods clearCallingIdentity and restoresCallingIdentity defined in public class Binder
     private final void grantUriLocked(Uri uri, String pkg, int userId) {
         //reset the identity of the current inter process communication's thread
@@ -962,9 +1043,7 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
             Binder.restoreCallingIdentity(ident);
         }
     }
-    //method grantItemLocked grants lock on the resources to the thread using monitors
-    //access mode is private, thus accessible obly to its own objects
-    // Takes three arguments: Clipdata/Intent object, calling package, user id
+    
     //invokes method grantUriLocked with Clipdata object, Intent object  
     //if the Clipdata/intent object is not null, lock is granted
     
@@ -980,7 +1059,7 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
     //method: addActiveOwnerLocked receives two argumens: user id and calling package
     //
     private final void addActiveOwnerLocked(int uid, String pkg) {
-    //name of package manager, targetUserHandle, oldIdentity is assigned as final, that means it will not change throught the program
+    //name of package manager, targetUserHandle, old Identity is assigned as final, that means it will not change throughout the program
         final IPackageManager pm = AppGlobals.getPackageManager();
         final int targetUserHandle = UserHandle.getCallingUserId();
         final long oldIdentity = Binder.clearCallingIdentity();
@@ -1010,6 +1089,9 @@ and ContentProvider.getUserIdFromUri(uri, UserHandle.getUserId(uid)
             clipboard.activePermissionOwners.add(pkg);
         }
     }
+
+
+
 //*********************************************** BLOCK-10: BEGINS      Author: Shawn Bailey***********************************************************
     /*This is a private method. The final keywords means the method cannot be overriden by subclasses.
     It takes a Uri uri as a parameter, which comes from the import android.net.Uri. URI stands for 
