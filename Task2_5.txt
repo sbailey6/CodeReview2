@@ -1,5 +1,8 @@
 Task 2: Summary of Our File's Role in Android
-<FILL IN HERE 100 - 200 words>
+ClipboardService is a class which is used to allow different applications to copy and paste data. It implements
+concurrent access to the clipboard by multiple processes. The data is stored in a class called ClipData, which contains meta-data that describes the information being copied and pasted. In order to keep track of which 
+process is accessing the clipboard, a user id and calling package can be passed to some methods to check if the application
+has read and write access. The clipoboard service fetches the user profile, checks the user privileges, synchronizes the process thread, clears the identity of the calling process, initializes an empty clipboard object for the particular user id, and restores the identity of the calling process.
 
 Task 3: UML class diagram describing superclasses and interfaces is provided in a separate file. We have provided a SVG document, which shows the superclasses and interfaces. We generated it at www.plantuml.com. Task4.java shows the syntax used
 to generate the UML. 

@@ -1,5 +1,16 @@
 @startuml
-                
+
+skinparam titleFontSize 14
+title
+  Association Legend
+  |= --> |= Association found within |
+  |<#1015a5>   | HostClipboardMonitor |
+  |<#2c9e0f>   | ClipboardService |
+  |<#6d12a5>   | ListenerInfo |
+  |<#f9d939>   | PerUserClipboard |
+  |<#000000>   | ClipboardImpl        |
+end title
+             
 package android.app{
   class ActivityManager
   class AppGlobals

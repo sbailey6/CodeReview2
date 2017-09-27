@@ -283,14 +283,14 @@ class HostClipboardMonitor implements Runnable {
 		 // passing the parameter object context of type Context 
 	    public ClipboardService(Context context) {
 			
-	    	// Parent class called 
+	    	// Parent constructor called 
 	        super(context);
 
 			// setting the variables to the values obtained from the methods 
 	        // value of getService method of ActivityMAnager is stored in the variable mAm 
 	        mAm = ActivityManager.getService();
 	       
-	        // value of getPackageMAnager of getContext method stored in mPm
+	        // value of getPackageManager of getContext method stored in mPm
 	        mPm = getContext().getPackageManager();
 	        
 	        // value of getService method of ServiceManager is stored in mUm when "Context.USER_SERVICE" is passed.
@@ -442,7 +442,7 @@ class HostClipboardMonitor implements Runnable {
 1. Class name: ClipboardImpl
              A child class of ClipboardImpl is derived from  IClipboard.Stub with private scope
              visibiility: private
-                class is private. hus, data and methods are scoped only
+                class is private. Thus, data and methods are scoped only
              
         1.1 Method: onTransact(), overridden by the definition in this class, i.e. child 
             This method calls an IBinder object and receives a call from Binder object. The call is synchronous, and thus, it calls IBinder object 
@@ -454,9 +454,9 @@ class HostClipboardMonitor implements Runnable {
             Return Type: returns true or false upon the success/failure of the transaction
         
         
-        1.2 Method: setPrimaryClip(), ovverridden by the definition in this class, i.e. child 
-                This method checks for user privilidges,fethes user profiles, ensures whether lock can be granted for the thread using monitors. If
-                the priviledges are valid for the user, it instanriates an object of ClipData for the user.
+        1.2 Method: setPrimaryClip(), overridden by the definition in this class, i.e. child 
+                This method checks for user privilidges,fetches user profiles, ensures whether lock can be granted for the thread using monitors. If
+                the priviledges are valid for the user, it instantiates an object of ClipData for the user.
             visibility: public
             
             Retrun type: void
@@ -538,6 +538,7 @@ class HostClipboardMonitor implements Runnable {
                     if (size > 1) { // Related profiles list include the current profile.
                         boolean canCopy = false;
                         try {
+                        	//Check to see if userId can copy and paste
                             canCopy = !mUm.getUserRestrictions(userId).getBoolean(
                                     UserManager.DISALLOW_CROSS_PROFILE_COPY_PASTE);
                         } catch (RemoteException e) {
@@ -1319,7 +1320,7 @@ method: synchronized() ensures that only one thread is executing at one time ins
             the clipboard. if it is in the background, then it is not allowed to access the clipboard.*/
             return mAm.isAppForeground(callingUid);
         }/*if a RemoteException occured, the function could not determine if the application
-        can access the clipboard, so it makes a failure log using Slog.java and returns false. */ 
+        can access the clipboard, so it makes a failure log using the Slog class and returns false. */ 
         catch (RemoteException e) {
             Slog.e("clipboard", "Failed to get Instant App status for package " + callingPackage,
                     e);

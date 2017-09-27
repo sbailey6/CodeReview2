@@ -1,5 +1,13 @@
 @startuml
-                
+     
+skinparam titleFontSize 30
+title
+  Arrow Legend
+  |= |=  |
+  | A &#8213;&#9655; B | A extends B|
+  | A ---&#9655; B | A implements B|
+end title
+
 package android.os{
 	class Binder
 	interface IBinder
